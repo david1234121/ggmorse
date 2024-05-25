@@ -7,6 +7,8 @@ add_library(${TARGET}
     resampler.cpp
     )
 
+set_target_properties(ggmorse PROPERTIES PUBLIC_HEADER ../include/ggmorse/ggmorse.h)
+
 target_include_directories(${TARGET} PUBLIC
     .
     ../include
@@ -28,7 +30,10 @@ if (MINGW)
         )
 endif()
 
+include(GNUInstallDirs)
+
 install(TARGETS ${TARGET}
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib/static
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/static
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
     )
