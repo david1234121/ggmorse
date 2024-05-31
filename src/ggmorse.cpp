@@ -155,6 +155,7 @@ struct GGMorse::Impl {
     TxRx rxData = {};
     TxRx txData = {};
     SignalF signalF = {};
+    ThresholdF thresholdF = {};
     WaveformI16 txWaveformI16 = {};
 
     TxRx outputBlockTmp = {};
@@ -756,6 +757,8 @@ void GGMorse::decode_float() {
         nModes = 1;
     }
 
+    m_impl->thresholdF.push_back(m_impl->statistics.signalThreshold);
+
     for (int mode = 0; mode < nModes; ++mode) {
         if (mode == 1) {
             s0 = std::min(std::max(0.0f, std::round(m_impl->statistics.estimatedSpeed_wpm - 5.0f - 2.0f)), 50.0f);
@@ -972,8 +975,10 @@ void GGMorse::decode_float() {
                         } else {
                             if (intervals[j].type == 0 ||
                                 intervals[j].type == 2 ||
-                                intervals[j].type == 3) {
-                                if (auto let = m_impl->alphabet.find(m_impl->curLetter); let != m_impl->alphabet.end()) {
+                                intervals[j].type == 3)
+                            {
+                                auto let = m_impl->alphabet.find(m_impl->curLetter);
+                                if (let != m_impl->alphabet.end()) {
                                     m_impl->rxData.push_back(let->second);
                                     printf("%c", let->second);
                                 } else {
@@ -1035,6 +1040,14 @@ int GGMorse::takeSignalF(SignalF & dst) {
     return (int) dst.size();
 }
 
+int GGMorse::takeThresholdF(ThresholdF & dst) {
+    if (m_impl->thresholdF.size() == 0) return 0;
+
+    dst = std::move(m_impl->thresholdF);
+
+    return (int) dst.size();
+}
+
 int GGMorse::takeTxWaveformI16(WaveformI16 & dst) {
     if (m_impl->txWaveformI16.size() == 0) return false;
 
@@ -1046,11 +1059,12 @@ int GGMorse::takeTxWaveformI16(WaveformI16 & dst) {
 const GGMorse::Statistics & GGMorse::getStatistics() const { return m_impl->statistics; }
 const GGMorse::Spectrogram GGMorse::getSpectrogram() const { return m_impl->stfft.spectrogram(); }
 
-bool GGMorse::setCharacter(const std::string & s01, char c) {
+bool GGMorse::setCharacter(const char * s01, char c) {
     // remove old character
-    for (auto it : m_impl->alphabet) {
-        if (it.second == c) {
-            m_impl->alphabet.erase(it.first);
+    for (TAlphabet::iterator it = m_impl->alphabet.begin(); it != m_impl->alphabet.end(); ++it)
+    {
+        if (it->second == c) {
+            m_impl->alphabet.erase(it->first);
             break;
         }
     }
